@@ -1,12 +1,14 @@
 package requester
 
 import (
+	"github.com/wenjiax/stress/stress/reportor"
 	"net/http"
 )
 
 type Events struct {
 	RequestBefore func(*Request, Share)
 	ResponseAfter func(*http.Response, Share)
+	ReportHandler func([]*reportor.Result)
 }
 
 //Share is a container that is shared in the current transaction,
