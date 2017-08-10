@@ -16,7 +16,7 @@ stress is an HTTP stress testing tool. Through this tool, you can do a stress te
 * **Package reference**
 * **Event support**
 * **Customizable**
- 
+  
 ## Usage
 
 stress contains two usage, either via the command line or used as a package.
@@ -121,12 +121,15 @@ Add event handling. Make some extra processing before each request, such as sett
     //you can access the required content.
 	events := &requester.Events{
 		RequestBefore: func(req *requester.Request, share requester.Share) {
-			req.SetHeader("Content-Type", "text/html")
-			req.SetBody("hello")
+			req.Req.Header.Set("Content-Type", "text/html")
+			req.Req.Body = ioutil.NopCloser(bytes.NewReader([]byte("Hello Body")))
 			share["name"] = "wenjiax"
 		},
 		ResponseAfter: func(res *http.Response, share requester.Share) {
-			name := share["name"]
+			name := share["name"]	//name="wenjiax"
+		},
+		ReportHandler: func(results []*reportor.Result, total time.Duration) {
+				//Custom processing results report.
 		},
 	}
 	config := &stress.Config{
