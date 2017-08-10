@@ -45,7 +45,11 @@ func (t *Task) Run() {
 }
 
 func (t *Task) Finish() {
-	reportor.NewReport(t.results, t.Output, time.Now().Sub(t.start)).Finalize()
+	if t.Requests[0].Events != nil && t.Requests[0].Events.ReportHandler != nil {
+		t.Requests[0].Events.ReportHandler(t.results)
+	} else {
+		reportor.NewReport(t.results, t.Output, time.Now().Sub(t.start)).Finalize()
+	}
 }
 
 func (t *Task) runRequesters() {
