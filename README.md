@@ -129,7 +129,7 @@ Add event handling. Make some extra processing before each request, such as sett
 			name := share["name"]	//name="wenjiax"
 		},
 		ReportHandler: func(results []*reportor.Result, total time.Duration) {
-				//Custom processing results report.
+			//Custom processing results report.
 		},
 	}
 	config := &stress.Config{
