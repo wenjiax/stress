@@ -46,7 +46,7 @@ func (t *Task) Run() {
 
 func (t *Task) Finish() {
 	if t.Requests[0].Events != nil && t.Requests[0].Events.ReportHandler != nil {
-		t.Requests[0].Events.ReportHandler(t.results)
+		t.Requests[0].Events.ReportHandler(t.results, time.Now().Sub(t.start))
 	} else {
 		reportor.NewReport(t.results, t.Output, time.Now().Sub(t.start)).Finalize()
 	}
@@ -87,24 +87,17 @@ func (t *Task) sendRequest(c *http.Client, no, index int) {
 		var code int
 		var dnsStart, connStart, reqStart, resStart, delayStart, reqBeforeStart, resAfterStart time.Time
 		var dnsDuration, connDuration, reqDuration, resDuration, delayDuration, reqBeforeDuration, resAfterDuration time.Duration
-		req := cloneRequest(t.Requests[i].Request)
-		body := t.Requests[i].RequestBody
+		req := cloneRequest(t.Requests[i].Request, t.Requests[i].RequestBody)
 		reqBeforeStart = time.Now()
 		if t.Requests[i].Events != nil && t.Requests[i].Events.RequestBefore != nil {
 			reqInfo := &Request{
-				URLStr:    t.Requests[i].Request.URL.String(),
-				Method:    t.Requests[i].Request.Method,
 				RoutineNo: no,
 				Index:     index,
-				body:      &body,
-				header:    req.Header,
+				Req:       req,
 			}
 			t.Requests[i].Events.RequestBefore(reqInfo, share)
 		}
 		reqBeforeDuration = time.Now().Sub(reqBeforeStart)
-		if len(body) > 0 {
-			req.Body = ioutil.NopCloser(bytes.NewReader(body))
-		}
 		trace := &httptrace.ClientTrace{
 			DNSStart: func(httptrace.DNSStartInfo) {
 				dnsStart = time.Now()
@@ -168,12 +161,15 @@ func (t *Task) sendRequest(c *http.Client, no, index int) {
 	t.mx.Unlock()
 }
 
-func cloneRequest(r *http.Request) *http.Request {
+func cloneRequest(r *http.Request, body []byte) *http.Request {
 	req := new(http.Request)
 	*req = *r
 	req.Header = make(http.Header, len(r.Header))
 	for k, s := range r.Header {
 		req.Header[k] = append([]string(nil), s...)
+	}
+	if len(body) > 0 {
+		req.Body = ioutil.NopCloser(bytes.NewReader(body))
 	}
 	return req
 }
