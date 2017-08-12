@@ -121,6 +121,7 @@ func (t *Task) run() error {
 		os.Exit(1)
 	}()
 	t.start = time.Now()
+	t.makeHTTPClient()
 	t.runRequesters()
 	t.finish()
 	return nil
@@ -168,6 +169,35 @@ func (t *Task) runRequester(num, no int) {
 	}
 }
 
+func (t *Task) makeHTTPClient() {
+	//Create http.Client.
+	for i, reqConfig := range t.reqConfigs {
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			DisableCompression: reqConfig.DisableCompression,
+			DisableKeepAlives:  reqConfig.DisableKeepAlives,
+			Proxy:              http.ProxyURL(reqConfig.ProxyAddr),
+		}
+		if reqConfig.H2 {
+			http2.ConfigureTransport(transport)
+		} else {
+			transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
+		}
+		client := &http.Client{
+			Transport: transport,
+			Timeout:   time.Duration(reqConfig.Timeout) * time.Second,
+		}
+		if reqConfig.DisableRedirects {
+			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			}
+		}
+		t.reqConfigs[i].client = client
+	}
+}
+
 func (t *Task) sendRequest(no, index int) {
 	//init share and results.
 	len := len(t.reqConfigs)
@@ -197,34 +227,34 @@ func (t *Task) sendRequest(no, index int) {
 		}
 		reqBeforeDuration = time.Now().Sub(reqBeforeStart)
 		//Create http.Client.
-		client := reqConfig.client
-		if client == nil {
-			transport := &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-				DisableCompression: reqConfig.DisableCompression,
-				DisableKeepAlives:  reqConfig.DisableKeepAlives,
-				Proxy:              http.ProxyURL(reqConfig.ProxyAddr),
-			}
-			if reqConfig.H2 {
-				http2.ConfigureTransport(transport)
-			} else {
-				transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
-			}
-			client = &http.Client{
-				Transport: transport,
-				Timeout:   time.Duration(reqConfig.Timeout) * time.Second,
-			}
-			if reqConfig.DisableRedirects {
-				client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-					return http.ErrUseLastResponse
-				}
-			}
-			t.mx.Lock()
-			t.reqConfigs[i].client = client
-			t.mx.Unlock()
-		}
+		// client := reqConfig.client
+		// if client == nil {
+		// 	transport := &http.Transport{
+		// 		TLSClientConfig: &tls.Config{
+		// 			InsecureSkipVerify: true,
+		// 		},
+		// 		DisableCompression: reqConfig.DisableCompression,
+		// 		DisableKeepAlives:  reqConfig.DisableKeepAlives,
+		// 		Proxy:              http.ProxyURL(reqConfig.ProxyAddr),
+		// 	}
+		// 	if reqConfig.H2 {
+		// 		http2.ConfigureTransport(transport)
+		// 	} else {
+		// 		transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
+		// 	}
+		// 	client = &http.Client{
+		// 		Transport: transport,
+		// 		Timeout:   time.Duration(reqConfig.Timeout) * time.Second,
+		// 	}
+		// 	if reqConfig.DisableRedirects {
+		// 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		// 			return http.ErrUseLastResponse
+		// 		}
+		// 	}
+		// 	t.mx.Lock()
+		// 	t.reqConfigs[i].client = client
+		// 	t.mx.Unlock()
+		// }
 		//Create httptrace.
 		trace := &httptrace.ClientTrace{
 			DNSStart: func(httptrace.DNSStartInfo) {
@@ -250,7 +280,7 @@ func (t *Task) sendRequest(no, index int) {
 			},
 		}
 		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-		res, err := client.Do(req)
+		res, err := reqConfig.client.Do(req)
 		if err == nil {
 			size = res.ContentLength
 			code = res.StatusCode
