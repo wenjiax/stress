@@ -28,6 +28,8 @@ Usage: stress [options...] <url> || stress [options...] -enable-tran <urls...>
 
 Options:
   -n  Number of requests to run. Default value is 100.
+      If set to -1, the request has been sent, but the report will 
+      not be output by default.
   -c  Number of requests to run concurrently. 
       Total number of requests cannot smaller than the concurrency level. 
       Default value is 0.

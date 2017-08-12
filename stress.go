@@ -26,7 +26,7 @@ var (
 	host      = flag.String("host", "", "")
 
 	n         = flag.Int("n", 100, "")
-	c         = flag.Int("c", 0, "")
+	c         = flag.Int("c", 10, "")
 	t         = flag.Int("t", 20, "")
 	d         = flag.Int("d", 0, "")
 	thinkTime = flag.Int("think-time", 0, "")
@@ -52,9 +52,11 @@ var usage = `Usage: stress [options...] <url> || stress [options...] -enable-tra
 
 Options:
   -n  Number of requests to run. Default value is 100.
+      If set to -1, the request has been sent, but the report will 
+      not be output by default.
   -c  Number of requests to run concurrently. 
       Total number of requests cannot smaller than the concurrency level. 
-      Default value is 0.
+      Default value is 10.
   -d  Duration of requests to run. Default value is 0 sec.
   -o  Output file path. For example: /home/user or ./files.
   
@@ -88,10 +90,8 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr, usage)
 	}
-
 	var hs headerSlice
 	flag.Var(&hs, "h", "")
-
 	flag.Parse()
 	if flag.NArg() <= 0 {
 		usageAndExit("")

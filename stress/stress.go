@@ -126,6 +126,9 @@ func (t *Task) run() error {
 }
 
 func (t *Task) finish() {
+	if t.Number < 0 && t.ReportHandler == nil {
+		return
+	}
 	total := time.Now().Sub(t.start) - t.thinkDuration
 	if t.ReportHandler != nil {
 		t.ReportHandler(t.results, total)
@@ -149,9 +152,9 @@ func (t *Task) runRequesters() {
 
 func (t *Task) runRequester(num, no int) {
 	i := 0
-	if t.Duration > 0 {
+	if t.Duration > 0 || t.Number < 0 {
 		for {
-			if time.Now().Sub(t.start) >= t.Duration {
+			if t.Duration > 0 && time.Now().Sub(t.start) >= t.Duration {
 				break
 			}
 			t.sendRequest(no, i)
@@ -280,6 +283,9 @@ func (t *Task) sendRequest(no, index int) {
 	finish := time.Now().Sub(tranStart)
 	results.Duration = finish - thinkDuration
 	//Save request result.
+	if t.Number < 0 && t.ReportHandler == nil {
+		return
+	}
 	t.mx.Lock()
 	t.results = append(t.results, results)
 	t.mx.Unlock()
@@ -299,10 +305,10 @@ func cloneRequest(r *http.Request, body []byte) *http.Request {
 }
 
 func (t *Task) checkAndInitConfigs() error {
-	if t.Number <= 0 && t.Duration <= 0 {
+	if t.Number == 0 && t.Duration <= 0 {
 		return errors.New("Number or Duration cannot be smaller than 1")
 	}
-	if t.Number > 0 && t.Duration > 0 {
+	if t.Number != 0 && t.Duration > 0 {
 		return errors.New("Number and Duration only set one")
 	}
 	if t.Concurrent <= 0 {
@@ -320,7 +326,7 @@ func (t *Task) checkAndInitConfigs() error {
 			return err
 		}
 	}
-	if t.Duration <= 0 {
+	if t.Duration <= 0 && t.Number > 0 {
 		t.results = make([]*Result, 0, t.Number)
 	}
 	for i, n := 0, len(t.reqConfigs); i < n; i++ {
