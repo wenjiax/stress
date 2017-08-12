@@ -89,13 +89,15 @@ func main() {
 	}
 	//Parsing global request header.
 	header := make(http.Header)
-	hs := strings.Split(*headers, ";")
-	for _, h := range hs {
-		match, err := parseInputWithRegexp(h, headerRegexp)
-		if err != nil {
-			usageAndExit(err.Error())
+	if *headers != "" {
+		hs := strings.Split(*headers, ";")
+		for i, n := 0, len(hs); i < n; i++ {
+			match, err := parseInputWithRegexp(hs[i], headerRegexp)
+			if err != nil {
+				usageAndExit(err.Error())
+			}
+			header.Set(match[1], match[2])
 		}
-		header.Set(match[1], match[2])
 	}
 	//Parsing global request proxyAddr.
 	var proxyURL *gurl.URL
