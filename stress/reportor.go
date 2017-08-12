@@ -1,4 +1,4 @@
-package reportor
+package stress
 
 import (
 	"fmt"
@@ -15,6 +15,42 @@ const (
 )
 
 type (
+	//Result is task result.
+	Result struct {
+		//Details is request details.
+		Details []*ResultDetail
+		//Duration is the total duration of multiple requests in a transactional request.
+		Duration time.Duration
+	}
+	//ResultDetail is request result details.
+	ResultDetail struct {
+		//URLStr is the request of URL.
+		URLStr string
+		//Method is the request of method.
+		Method string
+		//Err is the error message in the request.
+		Err error
+		//StatusCode is the status code for the response.
+		StatusCode int
+		//Duration is request duration.
+		Duration time.Duration
+		//ConnDuration is connection setup duration.
+		ConnDuration time.Duration
+		//DNSDuration is dns lookup duration.
+		DNSDuration time.Duration
+		//ReqDuration is request "write" duration.
+		ReqDuration time.Duration
+		//ResDuration is response "read" duration.
+		ResDuration time.Duration
+		//DelayDuration is delay between response and request.
+		DelayDuration time.Duration
+		//ReqBeforeDuration is function before the request duration.
+		ReqBeforeDuration time.Duration
+		//ResAfterDuration is function after the response duration.
+		ResAfterDuration time.Duration
+		//ContentLength is response content length.
+		ContentLength int64
+	}
 	report struct {
 		total          time.Duration
 		reqBeforeTotal time.Duration
@@ -53,28 +89,9 @@ type (
 		errorDist      map[string]int
 		sizeTotal      int64
 	}
-	Result struct {
-		Details  []*ResultDetail
-		Duration time.Duration
-	}
-	ResultDetail struct {
-		URLStr            string
-		Method            string
-		Err               error
-		StatusCode        int
-		Duration          time.Duration
-		ConnDuration      time.Duration
-		DNSDuration       time.Duration
-		ReqDuration       time.Duration
-		ResDuration       time.Duration
-		DelayDuration     time.Duration
-		ReqBeforeDuration time.Duration
-		ResAfterDuration  time.Duration
-		ContentLength     int64
-	}
 )
 
-func NewReport(results []*Result, output string, total time.Duration) *report {
+func newReport(results []*Result, output string, total time.Duration) *report {
 	return &report{
 		output:  output,
 		results: results,
@@ -82,7 +99,7 @@ func NewReport(results []*Result, output string, total time.Duration) *report {
 	}
 }
 
-func (r *report) Finalize() {
+func (r *report) finalize() {
 	for _, result := range r.results {
 		r.lats = append(r.lats, result.Duration.Seconds())
 		r.avgTotal += result.Duration.Seconds()
