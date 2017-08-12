@@ -27,7 +27,7 @@ stress contains two usage, either via the command line or used as a package.
 Usage: stress [options...] <url> || stress [options...] -enable-tran <urls...>
 
 Options:
-  -n  Number of requests to run. Default value is 0.
+  -n  Number of requests to run. Default value is 100.
   -c  Number of requests to run concurrently. 
       Total number of requests cannot smaller than the concurrency level. 
       Default value is 0.
@@ -35,7 +35,7 @@ Options:
   -o  Output file path. For example: /home/user or ./files.
   
   -h  Custom HTTP header. For example: 
-      -h "Accept: text/html;Content-Type: application/xml".
+      -h "Accept: text/html" -h "Content-Type: application/xml".
   -m  HTTP method, any of GET, POST, PUT, DELETE, HEAD, OPTIONS.
   -t  Timeout for each request in seconds. Default value is 20, 
       use 0 for infinite.
@@ -44,6 +44,9 @@ Options:
       /home/user/file.txt or ./file.txt.
   -x  HTTP Proxy address as host:port.
 
+  -h2 	 Enable HTTP/2.
+  -host	 Set HTTP Host header.
+  
   -think-time           Time to think after request. Default value is 0 sec.
   -disable-compression  Disable compression.
   -disable-keepalive    Disable keep-alive, prevents re-use of TCP

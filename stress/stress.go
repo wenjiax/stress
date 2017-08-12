@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/http2"
 )
 
 type (
@@ -41,6 +43,10 @@ type (
 		ThinkTime int
 		// ProxyAddr is the address of HTTP proxy server in the format on "host:port".
 		ProxyAddr *url.URL
+		//HTTP Host header
+		Host string
+		//H2 is an option to make HTTP/2 requests.
+		H2 bool
 		//DisableCompression is an option to disable compression in response.
 		DisableCompression bool
 		//DisableKeepAlives is an option to prevents re-use of TCP connections between different HTTP requests.
@@ -75,6 +81,10 @@ type (
 		ThinkTime int
 		// ProxyAddr is the address of HTTP proxy server in the format on "host:port".
 		ProxyAddr *url.URL
+		//HTTP Host header
+		Host string
+		//H2 is an option to make HTTP/2 requests.
+		H2 bool
 		//DisableCompression is an option to disable compression in response.
 		DisableCompression bool
 		//DisableKeepAlives is an option to prevents re-use of TCP connections between different HTTP requests.
@@ -170,6 +180,7 @@ func (t *Task) sendRequest(no, index int) {
 		var dnsStart, connStart, reqStart, resStart, delayStart, reqBeforeStart, resAfterStart time.Time
 		var dnsDuration, connDuration, reqDuration, resDuration, delayDuration, reqBeforeDuration, resAfterDuration time.Duration
 		req := cloneRequest(reqConfig.request, reqConfig.ReqBody)
+		req.Host = reqConfig.Host
 		//Handle custom event: function before the request.
 		reqBeforeStart = time.Now()
 		if reqConfig.Events != nil && reqConfig.Events.RequestBefore != nil {
@@ -189,6 +200,11 @@ func (t *Task) sendRequest(no, index int) {
 			DisableCompression: reqConfig.DisableCompression,
 			DisableKeepAlives:  reqConfig.DisableKeepAlives,
 			Proxy:              http.ProxyURL(reqConfig.ProxyAddr),
+		}
+		if reqConfig.H2 {
+			http2.ConfigureTransport(transport)
+		} else {
+			transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
 		}
 		client := &http.Client{
 			Transport: transport,
@@ -319,6 +335,9 @@ func (t *Task) checkAndInitConfigs() error {
 		}
 		if t.ThinkTime > 0 && t.reqConfigs[i].ThinkTime <= 0 {
 			t.reqConfigs[i].ThinkTime = t.ThinkTime
+		}
+		if t.Host != "" && t.reqConfigs[i].Host == "" {
+			t.reqConfigs[i].Host = t.Host
 		}
 		if t.ProxyAddr != nil && t.reqConfigs[i].ProxyAddr == nil {
 			t.reqConfigs[i].ProxyAddr = t.ProxyAddr

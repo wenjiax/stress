@@ -23,13 +23,15 @@ var (
 
 	output    = flag.String("o", "", "")
 	proxyAddr = flag.String("x", "", "")
+	host      = flag.String("host", "", "")
 
-	n         = flag.Int("n", 0, "")
+	n         = flag.Int("n", 100, "")
 	c         = flag.Int("c", 0, "")
 	t         = flag.Int("t", 20, "")
 	d         = flag.Int("d", 0, "")
 	thinkTime = flag.Int("think-time", 0, "")
 
+	h2                 = flag.Bool("h2", false, "")
 	disableCompression = flag.Bool("disable-compression", false, "")
 	disableKeepalive   = flag.Bool("disable-keepalive", false, "")
 	disableRedirects   = flag.Bool("disable-redirects", false, "")
@@ -49,7 +51,7 @@ const (
 var usage = `Usage: stress [options...] <url> || stress [options...] -enable-tran <urls...>
 
 Options:
-  -n  Number of requests to run. Default value is 0.
+  -n  Number of requests to run. Default value is 100.
   -c  Number of requests to run concurrently. 
       Total number of requests cannot smaller than the concurrency level. 
       Default value is 0.
@@ -66,6 +68,9 @@ Options:
       /home/user/file.txt or ./file.txt.
   -x  HTTP Proxy address as host:port.
 
+  -h2 	 Enable HTTP/2.
+  -host	 Set HTTP Host header.
+  
   -think-time           Time to think after request. Default value is 0 sec.
   -disable-compression  Disable compression.
   -disable-keepalive    Disable keep-alive, prevents re-use of TCP
@@ -122,6 +127,8 @@ func main() {
 		DisableCompression: *disableCompression,
 		DisableKeepAlives:  *disableKeepalive,
 		DisableRedirects:   *disableRedirects,
+		Host:               *host,
+		H2:                 *h2,
 	}
 	if *enableTran {
 		runTran(task, header)
