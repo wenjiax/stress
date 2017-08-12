@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	m        = flag.String("m", "GET", "")
-	headers  = flag.String("h", "", "")
+	m = flag.String("m", "GET", "")
+	// headers  = flag.String("h", "", "")
 	body     = flag.String("b", "", "")
 	bodyFile = flag.String("B", "", "")
 
@@ -57,7 +57,7 @@ Options:
   -o  Output file path. For example: /home/user or ./files.
   
   -h  Custom HTTP header. For example: 
-      -h "Accept: text/html;Content-Type: application/xml".
+      -h "Accept: text/html" -h "Content-Type: application/xml".
   -m  HTTP method, any of GET, POST, PUT, DELETE, HEAD, OPTIONS.
   -t  Timeout for each request in seconds. Default value is 20, 
       use 0 for infinite.
@@ -83,21 +83,23 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr, usage)
 	}
+
+	var hs headerSlice
+	flag.Var(&hs, "h", "")
+
 	flag.Parse()
 	if flag.NArg() <= 0 {
 		usageAndExit("")
 	}
 	//Parsing global request header.
 	header := make(http.Header)
-	if *headers != "" {
-		hs := strings.Split(*headers, ";")
-		for i, n := 0, len(hs); i < n; i++ {
-			match, err := parseInputWithRegexp(hs[i], headerRegexp)
-			if err != nil {
-				usageAndExit(err.Error())
-			}
-			header.Set(match[1], match[2])
+	// hs := strings.Split(*headers, ";")
+	for _, h := range hs {
+		match, err := parseInputWithRegexp(h, headerRegexp)
+		if err != nil {
+			usageAndExit(err.Error())
 		}
+		header.Set(match[1], match[2])
 	}
 	//Parsing global request proxyAddr.
 	var proxyURL *gurl.URL
@@ -232,4 +234,15 @@ func usageAndExit(msg string) {
 func errAndExit(msg string) {
 	fmt.Fprintf(os.Stderr, "Error:%s\n", msg)
 	os.Exit(1)
+}
+
+type headerSlice []string
+
+func (h *headerSlice) String() string {
+	return fmt.Sprintf("%s", *h)
+}
+
+func (h *headerSlice) Set(value string) error {
+	*h = append(*h, value)
+	return nil
 }
