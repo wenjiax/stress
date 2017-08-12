@@ -63,7 +63,7 @@ For example: run a task.
 stress -n 1000 -c 10 -m GET http://localhost:8080
 ```
 
-Use task: run a transactional request composed of multiple URL.
+For example: run a transactional request composed of multiple URL.
 
 ```
 stress -n 1000 -c 10 -enable-tran http://localhost:8080,m:post,b:hi,x:http://127.0.0.1:8888 http://localhost:8888,m:post,B:/home/file.txt,thinkTime:2 
