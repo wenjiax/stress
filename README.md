@@ -8,14 +8,14 @@ stress is an HTTP stress testing tool. Through this tool, you can do a stress te
 ## Installation
 
     go get -u github.com/wenjiax/stress
-
+ 
 ## Features
-
-* **Transactional request support**
+ 
+* **Transactional task support**
 * **Support duration and total number of requests**
-* **Package reference**
-* **Event support**
-* **Customizable**
+* **Support package reference**
+* **Support custom event**
+* **Support customizable**
   
 ## Usage
 
@@ -24,6 +24,8 @@ stress contains two usage, either via the command line or used as a package.
 ### 1.Use command line.
 
 ```
+Usage: stress [options...] <url> || stress [options...] -enable-tran <urls...>
+
 Options:
   -n  Number of requests to run. Default value is 0.
   -c  Number of requests to run concurrently. 
@@ -40,53 +42,36 @@ Options:
   -b  HTTP request body.
   -B  HTTP request body from file. For example:
       /home/user/file.txt or ./file.txt.
-  
-  -enable-tran  Enable transactional requests. Multiple urls 
-                form a transactional requests. 
-                For example: "stress [options...] -enable-tran 
-                http://localhost:8080,m:post,b:hi 
-                http://localhost:8888,m:post,B:/home/file.txt [urls...]".
+  -x  HTTP Proxy address as host:port.
+
+  -think-time           Time to think after request. Default value is 0 sec.
+  -disable-compression  Disable compression.
+  -disable-keepalive    Disable keep-alive, prevents re-use of TCP
+                    	connections between different HTTP requests.
+  -disable-redirects    Disable following of HTTP redirects.
+  -enable-tran          Enable transactional requests. Multiple urls 
+                        form a transactional requests. 
+                        For example: "stress [options...] -enable-tran 
+                        http://localhost:8080,m:post,b:hi,x:http://127.0.0.1:8888 
+                        http://localhost:8888,m:post,B:/home/file.txt,thinkTime:2 
+                        [urls...]".
 ```
 
-For example:
+For example: run a task.
 
 ```
 stress -n 1000 -c 10 -m GET http://localhost:8080
 ```
 
-Use case: runs a transactional request composed with multiple URL. 
+Use task: run a transactional request composed of multiple URL.
 
 ```
-stress -n 1000 -c 10 -enable-tran http://localhost:8080,m:post,b:hi http://localhost:8888,m:post,B:./file.txt
+stress -n 1000 -c 10 -enable-tran http://localhost:8080,m:post,b:hi,x:http://127.0.0.1:8888 http://localhost:8888,m:post,B:/home/file.txt,thinkTime:2 
 ```
 
  ### 2.Use package.
 
-For example:
-
-```
-package main
-
-import (
-	"fmt"
-	stress "github.com/wenjiax/stress/stress"
-)
-
-func main() {
-	config := &stress.Config{
-		URLStr:     "http://localhost:8080/api/test",
-		Method:     "GET",
-		Duration:   10,         //Continuous request for 10 seconds
-		Concurrent: 10,
-	}
-	err := stress.RunCase(config)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-```
-
-Use case: runs a transactional request composed of multiple URL.
+For example: run a task.
 
 ```
 package main
@@ -98,47 +83,99 @@ import (
 )
 
 func main() {
-	var configs []*stress.Config
-	configs = append(configs, &stress.Config{
-		URLStr:     "http://localhost:8080/api/test",
-		Method:     "GET",
-		Number:     1000,
+	task := &stress.Task{
+		Duration:   10, //Continuous request for 10 seconds
 		Concurrent: 10,
-	})
-	configs = append(configs, &stress.Config{
-		URLStr: "http://localhost:8080/api/GetUserInfo",
+		ReportHandler: func(results []*stress.Result, totalTime time.Duration) {
+			//Processing result reporting function.
+			//If the function is passed in, the incoming function is used to process the report,
+			//otherwise the default function is used to process the report.
+		},
+	}
+	err := task.Run(&stress.RequestConfig{
+		URLStr: "http://localhost:8080/api/test",
 		Method: "GET",
 	})
-	err := stress.RunTranCase(configs...)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
+
+```
+
+For example: run a transactional request composed of multiple URL.
+
+```
+package main
+
+import (
+	"fmt"
+
+	stress "github.com/wenjiax/stress/stress"
+)
+
+func main() {
+	task := &stress.Task{
+		Number:     1000,
+		Concurrent: 10,
+	}
+	var configs []*stress.RequestConfig
+	configs = append(configs, &stress.RequestConfig{
+		URLStr: "http://localhost:8080/api/test",
+		Method: "GET",
+	})
+	configs = append(configs, &stress.RequestConfig{
+		URLStr: "http://localhost:8080/api/hello",
+		Method: "POST",
+	})
+	err := task.RunTran(configs...)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
 ```
 Add event handling. Make some extra processing before each request, such as setting a different header or request body at a time.
 ```
-    //Share is a container that is shared in the current transaction,
-    //you can access the required content.
-	events := &requester.Events{
-		RequestBefore: func(req *requester.Request, share requester.Share) {
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+
+	stress "github.com/wenjiax/stress/stress"
+)
+
+func main() {
+	task := &stress.Task{
+		Number:     1000,
+		Concurrent: 10,
+	}
+	events := &stress.Events{
+		//Share is a container that is shared in the current transaction,
+		//you can access the required content.
+		RequestBefore: func(req *stress.Request, share stress.Share) {
 			req.Req.Header.Set("Content-Type", "text/html")
 			req.Req.Body = ioutil.NopCloser(bytes.NewReader([]byte("Hello Body")))
 			share["name"] = "wenjiax"
 		},
-		ResponseAfter: func(res *http.Response, share requester.Share) {
-			name := share["name"]	//name="wenjiax"
-		},
-		ReportHandler: func(results []*reportor.Result, total time.Duration) {
-			//Custom processing results report.
+		ResponseAfter: func(res *http.Response, share stress.Share) {
+			name := share["name"] //name="wenjiax"
+			fmt.Println(name)
 		},
 	}
-	config := &stress.Config{
-		URLStr:     "http://localhost:8080/api/test",
-		Method:     "GET",
-		Number:     1000,
-		Concurrent: 10,
-		Events:     events,
+	err := task.Run(&stress.RequestConfig{
+		URLStr: "http://localhost:8080/api/test",
+		Method: "GET",
+		Events: events,
+	})
+	if err != nil {
+		fmt.Println(err)
 	}
+}
+
 ```
 
 ## License
