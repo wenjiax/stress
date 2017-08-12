@@ -93,6 +93,7 @@ type (
 		DisableRedirects bool
 
 		request *http.Request
+		client  *http.Client
 	}
 )
 
@@ -196,27 +197,33 @@ func (t *Task) sendRequest(no, index int) {
 		}
 		reqBeforeDuration = time.Now().Sub(reqBeforeStart)
 		//Create http.Client.
-		transport := &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-			DisableCompression: reqConfig.DisableCompression,
-			DisableKeepAlives:  reqConfig.DisableKeepAlives,
-			Proxy:              http.ProxyURL(reqConfig.ProxyAddr),
-		}
-		if reqConfig.H2 {
-			http2.ConfigureTransport(transport)
-		} else {
-			transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
-		}
-		client := &http.Client{
-			Transport: transport,
-			Timeout:   time.Duration(reqConfig.Timeout) * time.Second,
-		}
-		if reqConfig.DisableRedirects {
-			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
+		client := reqConfig.client
+		if client == nil {
+			transport := &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+				DisableCompression: reqConfig.DisableCompression,
+				DisableKeepAlives:  reqConfig.DisableKeepAlives,
+				Proxy:              http.ProxyURL(reqConfig.ProxyAddr),
 			}
+			if reqConfig.H2 {
+				http2.ConfigureTransport(transport)
+			} else {
+				transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
+			}
+			client = &http.Client{
+				Transport: transport,
+				Timeout:   time.Duration(reqConfig.Timeout) * time.Second,
+			}
+			if reqConfig.DisableRedirects {
+				client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				}
+			}
+			t.mx.Lock()
+			t.reqConfigs[i].client = client
+			t.mx.Unlock()
 		}
 		//Create httptrace.
 		trace := &httptrace.ClientTrace{
