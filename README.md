@@ -1,7 +1,7 @@
 # stress
 
 [![Build Status](https://travis-ci.org/wenjiax/stress.svg?branch=master)](https://travis-ci.org/wenjiax/stress)
-[![GoDoc](https://godoc.org/github.com/wenjiax/stress?status.svg)](http://godoc.org/github.com/wenjiax/stress)
+[![GoDoc](https://godoc.org/github.com/wenjiax/stress/stress?status.svg)](http://godoc.org/github.com/wenjiax/stress/stress)
 
 stress is an HTTP stress testing tool. Through this tool, you can do a stress test on the HTTP service and get detailed test results. It is inspired by hey.
 
