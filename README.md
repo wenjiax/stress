@@ -89,12 +89,12 @@ import (
 
 func main() {
 	task := &stress.Task{
-		Duration:   10, //Continuous request for 10 seconds
+		Duration:   10, // Continuous request for 10 seconds
 		Concurrent: 10,
 		ReportHandler: func(results []*stress.Result, totalTime time.Duration) {
-			//Processing result reporting function.
-			//If the function is passed in, the incoming function is used to process the report,
-			//otherwise the default function is used to process the report.
+			// Processing result reporting function.
+			// If the function is passed in, the incoming function is used to process the report,
+			// otherwise the default function is used to process the report.
 		},
 	}
 	err := task.Run(&stress.RequestConfig{
@@ -159,15 +159,15 @@ func main() {
 		Concurrent: 10,
 	}
 	events := &stress.Events{
-		//Share is a container that is shared in the current transaction,
-		//you can access the required content.
+		// Share is a container that is shared in the current transaction,
+		// you can access the required content.
 		RequestBefore: func(req *stress.Request, share stress.Share) {
 			req.Req.Header.Set("Content-Type", "text/html")
 			req.Req.Body = ioutil.NopCloser(bytes.NewReader([]byte("Hello Body")))
 			share["name"] = "wenjiax"
 		},
 		ResponseAfter: func(res *http.Response, share stress.Share) {
-			name := share["name"] //name="wenjiax"
+			name := share["name"] // name="wenjiax"
 			fmt.Println(name)
 		},
 	}
