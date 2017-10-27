@@ -15,40 +15,40 @@ const (
 )
 
 type (
-	//Result is task result.
+	// Result is task result.
 	Result struct {
-		//Details is request details.
+		// Details is request details.
 		Details []*ResultDetail
-		//Duration is the total duration of multiple requests in a transactional request.
+		// Duration is the total duration of multiple requests in a transactional request.
 		Duration time.Duration
 	}
-	//ResultDetail is request result details.
+	// ResultDetail is request result details.
 	ResultDetail struct {
-		//URLStr is the request of URL.
+		// URLStr is the request of URL.
 		URLStr string
-		//Method is the request of method.
+		// Method is the request of method.
 		Method string
-		//Err is the error message in the request.
+		// Err is the error message in the request.
 		Err error
-		//StatusCode is the status code for the response.
+		// StatusCode is the status code for the response.
 		StatusCode int
-		//Duration is request duration.
+		// Duration is request duration.
 		Duration time.Duration
-		//ConnDuration is connection setup duration.
+		// ConnDuration is connection setup duration.
 		ConnDuration time.Duration
-		//DNSDuration is dns lookup duration.
+		// DNSDuration is dns lookup duration.
 		DNSDuration time.Duration
-		//ReqDuration is request "write" duration.
+		// ReqDuration is request "write" duration.
 		ReqDuration time.Duration
-		//ResDuration is response "read" duration.
+		// ResDuration is response "read" duration.
 		ResDuration time.Duration
-		//DelayDuration is delay between response and request.
+		// DelayDuration is delay between response and request.
 		DelayDuration time.Duration
-		//ReqBeforeDuration is function before the request duration.
+		// ReqBeforeDuration is function before the request duration.
 		ReqBeforeDuration time.Duration
-		//ResAfterDuration is function after the response duration.
+		// ResAfterDuration is function after the response duration.
 		ResAfterDuration time.Duration
-		//ContentLength is response content length.
+		// ContentLength is response content length.
 		ContentLength int64
 	}
 	report struct {

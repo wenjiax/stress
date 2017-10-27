@@ -19,77 +19,77 @@ import (
 )
 
 type (
-	//Task contains the stress test configuration and request configuration.
+	// Task contains the stress test configuration and request configuration.
 	Task struct {
-		//Nuber is the total number of requests to send.
+		// Nuber is the total number of requests to send.
 		Number int
-		//Concurrent is the concurrent number of requests.
+		// Concurrent is the concurrent number of requests.
 		Concurrent int
-		//Duration is the duration of requests.
+		// Duration is the duration of requests.
 		Duration time.Duration
-		//Output is the report output directory.
-		//The output contains the summary information file and the CSV file for each request.
+		// Output is the report output directory.
+		// The output contains the summary information file and the CSV file for each request.
 		Output string
-		//Processing result reporting function.
-		//If the function is passed in, the incoming function is used to process the report,
-		//otherwise the default function is used to process the report.
+		// Processing result reporting function.
+		// If the function is passed in, the incoming function is used to process the report,
+		// otherwise the default function is used to process the report.
 		ReportHandler func(results []*Result, totalTime time.Duration)
 
-		//Global configuration, if the configuration is not specified in RequestConfig,
-		//use the settings global configuration.
-		//Timeout is the timeout of request in seconds.
+		// Global configuration, if the configuration is not specified in RequestConfig,
+		// use the settings global configuration.
+		// Timeout is the timeout of request in seconds.
 		Timeout int
-		//ThinkTime is the think time of request in seconds.
+		// ThinkTime is the think time of request in seconds.
 		ThinkTime int
 		// ProxyAddr is the address of HTTP proxy server in the format on "host:port".
 		ProxyAddr *url.URL
-		//HTTP Host header
+		// HTTP Host header
 		Host string
-		//H2 is an option to make HTTP/2 requests.
+		// H2 is an option to make HTTP/2 requests.
 		H2 bool
-		//DisableCompression is an option to disable compression in response.
+		// DisableCompression is an option to disable compression in response.
 		DisableCompression bool
-		//DisableKeepAlives is an option to prevents re-use of TCP connections between different HTTP requests.
+		// DisableKeepAlives is an option to prevents re-use of TCP connections between different HTTP requests.
 		DisableKeepAlives bool
-		//DisableRedirects is an option to prevent the following of HTTP redirects.
+		// DisableRedirects is an option to prevent the following of HTTP redirects.
 		DisableRedirects bool
 
-		//The total think time required for all requests.
+		// The total think time required for all requests.
 		thinkDuration time.Duration
 		reqConfigs    []*RequestConfig
 		start         time.Time
 		results       []*Result
 		mx            sync.Mutex
 	}
-	//RequestConfig is the request of configuration.
+	// RequestConfig is the request of configuration.
 	RequestConfig struct {
-		//URLStr is the request of URL.
+		// URLStr is the request of URL.
 		URLStr string
-		//Method is the request of method.
+		// Method is the request of method.
 		Method string
-		//ReqBody is the request of body.
+		// ReqBody is the request of body.
 		ReqBody []byte
-		//Header is the request of header.
+		// Header is the request of header.
 		Header http.Header
-		//Events is the custom event in the request.
-		//Contains the function before the request and the function after the response.
+		// Events is the custom event in the request.
+		// Contains the function before the request and the function after the response.
 		Events *Events
 
-		//Timeout is the timeout of request in seconds.
+		// Timeout is the timeout of request in seconds.
 		Timeout int
-		//ThinkTime is the think time of request in seconds.
+		// ThinkTime is the think time of request in seconds.
 		ThinkTime int
 		// ProxyAddr is the address of HTTP proxy server in the format on "host:port".
 		ProxyAddr *url.URL
-		//HTTP Host header
+		// HTTP Host header
 		Host string
-		//H2 is an option to make HTTP/2 requests.
+		// H2 is an option to make HTTP/2 requests.
 		H2 bool
-		//DisableCompression is an option to disable compression in response.
+		// DisableCompression is an option to disable compression in response.
 		DisableCompression bool
-		//DisableKeepAlives is an option to prevents re-use of TCP connections between different HTTP requests.
+		// DisableKeepAlives is an option to prevents re-use of TCP connections between different HTTP requests.
 		DisableKeepAlives bool
-		//DisableRedirects is an option to prevent the following of HTTP redirects.
+		// DisableRedirects is an option to prevent the following of HTTP redirects.
 		DisableRedirects bool
 
 		request *http.Request
@@ -97,13 +97,13 @@ type (
 	}
 )
 
-//Run is run a task.
+// Run is run a task.
 func (t *Task) Run(config *RequestConfig) error {
 	t.reqConfigs = append([]*RequestConfig(nil), config)
 	return t.run()
 }
 
-//RunTran is run a transactional task.
+// RunTran is run a transactional task.
 func (t *Task) RunTran(configs ...*RequestConfig) error {
 	t.reqConfigs = append([]*RequestConfig(nil), configs...)
 	return t.run()
@@ -170,7 +170,7 @@ func (t *Task) runRequester(num, no int) {
 }
 
 func (t *Task) makeHTTPClient() {
-	//Create http.Client.
+	// Create http.Client.
 	for i, reqConfig := range t.reqConfigs {
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -199,7 +199,7 @@ func (t *Task) makeHTTPClient() {
 }
 
 func (t *Task) sendRequest(no, index int) {
-	//init share and results.
+	// init share and results.
 	len := len(t.reqConfigs)
 	share := make(Share, len)
 	results := &Result{
@@ -215,7 +215,7 @@ func (t *Task) sendRequest(no, index int) {
 		var dnsDuration, connDuration, reqDuration, resDuration, delayDuration, reqBeforeDuration, resAfterDuration time.Duration
 		req := cloneRequest(reqConfig.request, reqConfig.ReqBody)
 		req.Host = reqConfig.Host
-		//Handle custom event: function before the request.
+		// Handle custom event: function before the request.
 		reqBeforeStart = time.Now()
 		if reqConfig.Events != nil && reqConfig.Events.RequestBefore != nil {
 			reqInfo := &Request{
@@ -226,36 +226,7 @@ func (t *Task) sendRequest(no, index int) {
 			reqConfig.Events.RequestBefore(reqInfo, share)
 		}
 		reqBeforeDuration = time.Now().Sub(reqBeforeStart)
-		//Create http.Client.
-		// client := reqConfig.client
-		// if client == nil {
-		// 	transport := &http.Transport{
-		// 		TLSClientConfig: &tls.Config{
-		// 			InsecureSkipVerify: true,
-		// 		},
-		// 		DisableCompression: reqConfig.DisableCompression,
-		// 		DisableKeepAlives:  reqConfig.DisableKeepAlives,
-		// 		Proxy:              http.ProxyURL(reqConfig.ProxyAddr),
-		// 	}
-		// 	if reqConfig.H2 {
-		// 		http2.ConfigureTransport(transport)
-		// 	} else {
-		// 		transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
-		// 	}
-		// 	client = &http.Client{
-		// 		Transport: transport,
-		// 		Timeout:   time.Duration(reqConfig.Timeout) * time.Second,
-		// 	}
-		// 	if reqConfig.DisableRedirects {
-		// 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		// 			return http.ErrUseLastResponse
-		// 		}
-		// 	}
-		// 	t.mx.Lock()
-		// 	t.reqConfigs[i].client = client
-		// 	t.mx.Unlock()
-		// }
-		//Create httptrace.
+		// Create httptrace.
 		trace := &httptrace.ClientTrace{
 			DNSStart: func(httptrace.DNSStartInfo) {
 				dnsStart = time.Now()
@@ -284,7 +255,7 @@ func (t *Task) sendRequest(no, index int) {
 		if err == nil {
 			size = res.ContentLength
 			code = res.StatusCode
-			//Handle custom event: function after the response.
+			// Handle custom event: function after the response.
 			resAfterStart = time.Now()
 			if reqConfig.Events != nil && reqConfig.Events.ResponseAfter != nil {
 				reqConfig.Events.ResponseAfter(res, share)
@@ -311,7 +282,7 @@ func (t *Task) sendRequest(no, index int) {
 			ResAfterDuration:  resAfterDuration,
 			ContentLength:     size,
 		}
-		//Handle think time.
+		// Handle think time.
 		thinktime := time.Duration(reqConfig.ThinkTime) * time.Second
 		time.Sleep(thinktime)
 		thinkDuration += thinktime
@@ -319,7 +290,7 @@ func (t *Task) sendRequest(no, index int) {
 	}
 	finish := time.Now().Sub(tranStart)
 	results.Duration = finish - thinkDuration
-	//Save request result.
+	// Save request result.
 	if t.Number < 0 && t.ReportHandler == nil {
 		return
 	}

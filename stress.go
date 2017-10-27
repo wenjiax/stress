@@ -96,7 +96,7 @@ func main() {
 	if flag.NArg() <= 0 {
 		usageAndExit("")
 	}
-	//Parsing global request header.
+	// Parsing global request header.
 	header := make(http.Header)
 	// hs := strings.Split(*headers, ";")
 	for _, h := range hs {
@@ -106,7 +106,7 @@ func main() {
 		}
 		header.Set(match[1], match[2])
 	}
-	//Parsing global request proxyAddr.
+	// Parsing global request proxyAddr.
 	var proxyURL *gurl.URL
 	if *proxyAddr != "" {
 		var err error
@@ -115,7 +115,7 @@ func main() {
 			usageAndExit(err.Error())
 		}
 	}
-	//Set parameters and global configuration.
+	// Set parameters and global configuration.
 	task := &lbstress.Task{
 		Number:             *n,
 		Concurrent:         *c,
@@ -139,7 +139,7 @@ func main() {
 }
 
 func run(task *lbstress.Task, header http.Header) {
-	//Parsing request body.
+	// Parsing request body.
 	var bodyAll []byte
 	if *body != "" {
 		bodyAll = []byte(*body)
@@ -151,7 +151,7 @@ func run(task *lbstress.Task, header http.Header) {
 		}
 		bodyAll = content
 	}
-	//Run task.
+	// Run task.
 	err := task.Run(&lbstress.RequestConfig{
 		URLStr:  flag.Args()[0],
 		Method:  *m,
@@ -168,12 +168,12 @@ func runTran(task *lbstress.Task, header http.Header) {
 	for i, len := 0, flag.NArg(); i < len; i++ {
 		argstr := flag.Args()[i]
 		url := strings.Split(argstr, ",")[0]
-		//Parsing request method.
+		// Parsing request method.
 		methodMatch, err := parseInputWithRegexp(argstr, methodsRegexp)
 		if err != nil {
 			errAndExit(err.Error())
 		}
-		//Parsing request body.
+		// Parsing request body.
 		bodyMatch, _ := parseInputWithRegexp(argstr, bodyRegexp)
 		bodyFileMatch, _ := parseInputWithRegexp(argstr, bodyFileRegexp)
 		var bodyAll []byte
@@ -187,7 +187,7 @@ func runTran(task *lbstress.Task, header http.Header) {
 			}
 			bodyAll = content
 		}
-		//Parsing request proxyAddr.
+		// Parsing request proxyAddr.
 		proxyAddrMatch, _ := parseInputWithRegexp(argstr, proxyAddrRegexp)
 		var proxyURL *gurl.URL
 		if proxyAddrMatch != nil {
@@ -197,7 +197,7 @@ func runTran(task *lbstress.Task, header http.Header) {
 				usageAndExit(err.Error())
 			}
 		}
-		//Parsing request thinkTime.
+		// Parsing request thinkTime.
 		thinkTime := 0
 		thinkTimeMatch, _ := parseInputWithRegexp(argstr, thinkTimeRegexp)
 		if thinkTimeMatch != nil {
@@ -212,7 +212,7 @@ func runTran(task *lbstress.Task, header http.Header) {
 			ThinkTime: thinkTime,
 		})
 	}
-	//Run transactional task.
+	// Run transactional task.
 	err := task.RunTran(configs...)
 	if err != nil {
 		errAndExit(err.Error())
